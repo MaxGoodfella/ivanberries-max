@@ -1,0 +1,6 @@
+### IntelliJ IDEA ###
+.idea
+
+### Extra ###
+db/*.DS_Store
+*.DS_Store
