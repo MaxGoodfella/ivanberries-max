@@ -1,0 +1,80 @@
+services:
+
+  postgres_db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    ports:
+      - "6542:5432"
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  catalog-service:
+    build:
+      context: ./catalog-service
+      dockerfile: Dockerfile
+    container_name: catalog-service
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: postgres_db
+      POSTGRES_PORT: "5432"
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: "host=postgres_db user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} port=${POSTGRES_PORT} sslmode=disable"
+    env_file:
+      - .env
+
+
+
+
+
+
+
+
+
+
+
+
+
+#  redis:
+#    image: redis:latest
+#    container_name: redis
+#    ports:
+#      - "6379:6379"
+#    volumes:
+#      - redis-data:/data
+
+#  mongodb:
+#    image: mongo
+#    container_name: mongodb
+#    restart: always
+#    ports:
+#      - '27017:27017'
+#    environment:
+#      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+#      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+#    volumes:
+#      - ./db:/data/db
+#    healthcheck:
+#      test: [ "CMD", "mongo", "--username", "${MONGO_INITDB_ROOT_USERNAME}", "--password", "${MONGO_INITDB_ROOT_PASSWORD}", "--authenticationDatabase", "admin", "--eval", "db.runCommand({ ping: 1 })" ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 5
+
+
+#volumes:
+#  redis-data:
