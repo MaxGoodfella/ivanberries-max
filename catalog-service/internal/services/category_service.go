@@ -6,7 +6,8 @@ import (
 	"gorm.io/gorm"
 	"ivanberries-max/internal/models"
 	"ivanberries-max/internal/repositories"
-	"strings"
+	"ivanberries-max/internal/validation/utilities"
+	"ivanberries-max/internal/validation/validators"
 )
 
 type CategoryService struct {
@@ -18,73 +19,67 @@ func NewCategoryService(repo *repositories.CategoryRepository) *CategoryService 
 }
 
 func (s *CategoryService) GetCategoryByID(id uuid.UUID) (*models.Category, error) {
-	return s.repo.GetByID(id)
+	category, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, utilities.ErrCategoryNotFound
+		}
+		return nil, err
+	}
+	return category, nil
+}
+
+func (s *CategoryService) GetCategories() ([]models.Category, error) {
+	return s.repo.GetAll()
 }
 
 func (s *CategoryService) CreateCategory(category *models.Category) error {
-	name := strings.TrimSpace(category.Name)
-	if name == "" {
-		return errors.New("name cannot be null, empty, or just spaces")
+	if err := validators.ValidateCategory(category); err != nil {
+		return err
 	}
 
-	if !nameRegexp.MatchString(name) {
-		return errors.New("invalid category name format")
+	if err := s.repo.Create(category); err != nil {
+		return utilities.ErrCategoryCreationFailed
 	}
 
-	if !containsLetter.MatchString(name) {
-		return errors.New("name must contain at least one letter")
-	}
-
-	return s.repo.Create(category)
+	return nil
 }
 
 func (s *CategoryService) UpdateCategory(category *models.Category) (*models.Category, error) {
 	if category.ID == uuid.Nil {
-		return nil, errors.New("invalid category ID")
+		return nil, utilities.ErrInvalidCategoryID
 	}
 
-	name := strings.TrimSpace(category.Name)
-	if name == "" {
-		return nil, errors.New("name cannot be null, empty, or just spaces")
-	}
-
-	if !nameRegexp.MatchString(name) {
-		return nil, errors.New("invalid category name format")
-	}
-
-	if !containsLetter.MatchString(name) {
-		return nil, errors.New("name must contain at least one letter")
+	if err := validators.ValidateCategory(category); err != nil {
+		return nil, err
 	}
 
 	_, err := s.repo.GetByID(category.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, gorm.ErrRecordNotFound
+			return nil, utilities.ErrCategoryNotFound
 		}
 		return nil, err
 	}
 
-	err = s.repo.Update(category)
-	if err != nil {
-		return nil, err
+	if err := s.repo.Update(category); err != nil {
+		return nil, utilities.ErrCategoryUpdateFailed
 	}
 
-	updatedCategory, err := s.repo.GetByID(category.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return updatedCategory, nil
+	return s.repo.GetByID(category.ID)
 }
 
 func (s *CategoryService) Delete(id uuid.UUID) error {
 	if id == uuid.Nil {
-		return errors.New("invalid category ID")
+		return utilities.ErrInvalidCategoryID
 	}
 
-	return s.repo.Delete(id)
-}
+	if err := s.repo.Delete(id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utilities.ErrCategoryNotFound
+		}
+		return utilities.ErrCategoryDeleteFailed
+	}
 
-func (s *CategoryService) GetCategories() ([]models.Category, error) {
-	return s.repo.GetAll()
+	return nil
 }
