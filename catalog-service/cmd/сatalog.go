@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"ivanberries-max/internal/cache"
 	"ivanberries-max/internal/handlers"
 	"ivanberries-max/internal/repositories"
 	"ivanberries-max/internal/services"
@@ -14,11 +15,6 @@ import (
 )
 
 func main() {
-
-	//err := godotenv.Load()
-	//if err != nil {
-	//	log.Fatalf("Ошибка загрузки .env файла: %s", err)
-	//}
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
@@ -35,6 +31,8 @@ func main() {
 		log.Fatalf("database connection error: %s", err)
 	}
 
+	redisClient := cache.NewRedisClient(os.Getenv("REDIS_ADDR"))
+
 	productRepo := repositories.NewProductRepository(db)
 	productService := services.NewProductService(productRepo)
 	productHandler := handlers.NewProductHandler(productService)
@@ -50,7 +48,7 @@ func main() {
 	}
 
 	categoryRepo := repositories.NewCategoryRepository(db)
-	categoryService := services.NewCategoryService(categoryRepo)
+	categoryService := services.NewCategoryService(categoryRepo, redisClient)
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 
 	category := router.Group("/categories")
@@ -62,8 +60,7 @@ func main() {
 		category.DELETE("/:id", categoryHandler.DeleteCategory)
 	}
 
-	// 6️⃣ Запускаем сервер
 	if err := router.Run(":8080"); err != nil {
-		log.Fatalf("Ошибка запуска сервера: %s", err)
+		log.Fatalf("server start error: %s", err)
 	}
 }
