@@ -2,20 +2,33 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"ivanberries-max/internal/kafka"
 	"ivanberries-max/internal/models"
 	"ivanberries-max/internal/repositories"
 	"ivanberries-max/internal/validation/utilities"
 	"ivanberries-max/internal/validation/validators"
+	"log"
+	"os"
 )
 
+//type ProductService struct {
+//	repo *repositories.ProductRepository
+//}
+//
+//func NewProductService(repo *repositories.ProductRepository) *ProductService {
+//	return &ProductService{repo: repo}
+//}
+
 type ProductService struct {
-	repo *repositories.ProductRepository
+	repo     *repositories.ProductRepository
+	producer *kafka.Producer
 }
 
-func NewProductService(repo *repositories.ProductRepository) *ProductService {
-	return &ProductService{repo: repo}
+func NewProductService(repo *repositories.ProductRepository, producer *kafka.Producer) *ProductService {
+	return &ProductService{repo: repo, producer: producer}
 }
 
 func (s *ProductService) GetProductByID(id uuid.UUID) (*models.Product, error) {
@@ -35,11 +48,13 @@ func (s *ProductService) CreateProduct(product *models.Product) error {
 
 func (s *ProductService) UpdateProduct(id uuid.UUID, updates map[string]interface{}) (*models.Product, error) {
 	if err := validators.ValidateProductUpdates(updates); err != nil {
+		log.Printf("Validation failed: %v", err)
 		return nil, err
 	}
 
 	_, err := s.repo.GetByID(id)
 	if err != nil {
+		log.Printf("GetByID failed: %v", err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, utilities.ErrProductNotFound
 		}
@@ -48,6 +63,7 @@ func (s *ProductService) UpdateProduct(id uuid.UUID, updates map[string]interfac
 
 	if categoryID, ok := updates["category_id"].(string); ok {
 		if err := s.repo.CheckCategoryExists(categoryID); err != nil {
+			log.Printf("Category check failed: %v", err)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, utilities.ErrCategoryNotFound
 			}
@@ -57,7 +73,19 @@ func (s *ProductService) UpdateProduct(id uuid.UUID, updates map[string]interfac
 
 	err = s.repo.Update(id, updates)
 	if err != nil {
+		log.Printf("Update failed: %v", err)
 		return nil, utilities.ErrProductUpdateFailed
+	}
+
+	log.Println("Product successfully updated, sending event to Kafka")
+
+	event := fmt.Sprintf(`{"event":"%s","product_id":"%s"}`, os.Getenv("KAFKA_EVENT_PRODUCT_UPDATED"), id)
+	log.Printf("Sending event to Kafka: %s", event)
+	err = s.producer.SendMessage(id.String(), event)
+	if err != nil {
+		log.Printf("Failed to send message: %v", err)
+	} else {
+		log.Println("Message successfully sent to Kafka")
 	}
 
 	return s.repo.GetByID(id)

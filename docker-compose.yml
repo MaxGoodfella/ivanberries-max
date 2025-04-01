@@ -15,6 +15,9 @@ services:
       timeout: 5s
       interval: 5s
       retries: 10
+      start_period: 5s
+    networks:
+      - backend_network
 
   redis:
     image: redis:latest
@@ -24,11 +27,93 @@ services:
     volumes:
       - redis-data:/data
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       retries: 3
       timeout: 5s
       start_period: 5s
+    networks:
+      - backend_network
+
+  kafka:
+    image: 'bitnami/kafka:latest'
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_NODE_ID=1
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_KRAFT_CLUSTER_ID=oWOM7KV2SGG9bYAkpVFLVQ
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+    volumes:
+      - kafka-data:/bitnami/kafka
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      retries: 3
+      timeout: 5s
+      start_period: 10s
+    networks:
+      - backend_network
+
+#  kafka:
+#    image: 'bitnami/kafka:latest'
+#    container_name: kafka
+#    ports:
+#      - "9092:9092"
+#    environment:
+#      - KAFKA_ENABLE_KRAFT=yes
+#      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+#      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+#      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+#      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+#      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,PLAINTEXT://kafka:9092
+#      - KAFKA_BROKER_ID=1
+#      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+#      - KAFKA_CFG_NODE_ID=1
+#      - ALLOW_PLAINTEXT_LISTENER=yes
+#      - KAFKA_KRAFT_CLUSTER_ID=oWOM7KV2SGG9bYAkpVFLVQ
+#      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+#    volumes:
+#      - kafka-data:/bitnami/kafka
+#    healthcheck:
+#      test: [ "CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092" ]
+#      interval: 30s
+#      retries: 3
+#      timeout: 5s
+#      start_period: 10s
+#    networks:
+#      - backend_network
+
+
+#  kafka_ui:
+#    image: provectuslabs/kafka-ui:v0.4.0
+#    container_name: kafka_ui
+#    depends_on:
+#      kafka:
+#        condition: service_healthy
+#    ports:
+#      - "9090:9090"
+#    environment:
+#      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka:9092
+##      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka:9093
+#      - KAFKA_CLUSTERS_0_NAME=kraft
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:9090"]
+#      interval: 10s
+#      retries: 3
+#      timeout: 5s
+#      start_period: 5s
+#    networks:
+#      - backend_network
 
   catalog-service:
     build:
@@ -43,6 +128,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -54,7 +141,106 @@ services:
       REDIS_ADDR: ${REDIS_ADDR}
     env_file:
       - .env
-
+    networks:
+      - backend_network
 
 volumes:
   redis-data:
+  kafka-data:
+
+networks:
+  backend_network:
+    driver: bridge
+
+
+
+    #  zookeeper:
+    #    image: confluentinc/cp-zookeeper:latest
+    #    container_name: zookeeper
+    #    environment:
+    #      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
+    #      ZOOKEEPER_TICK_TIME: ${ZOOKEEPER_TICK_TIME}
+    #      ZOOKEEPER_INIT_LIMIT: ${ZOOKEEPER_INIT_LIMIT}
+    #      ZOOKEEPER_SYNC_LIMIT: ${ZOOKEEPER_SYNC_LIMIT}
+    #    ports:
+    #      - "2181:2181"
+    #    networks:
+    #      - kafka-net
+    #    volumes:
+    #      - zookeeper-data:/var/lib/zookeeper/data
+    #      - ./etc/kafka/zookeeper.properties:/etc/zookeeper/conf/zoo.cfg
+    #    healthcheck:
+    #      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
+    #      interval: 30s
+    #      retries: 3
+    #      start_period: 5s
+    #      timeout: 10s
+
+
+    #  kafka:
+    #    image: confluentinc/cp-kafka:latest
+    #    container_name: kafka
+    #    depends_on:
+    #      zookeeper:
+    #        condition: service_healthy
+    #    ports:
+    #      - "29092:29092"
+    #    environment:
+    #      KAFKA_BROKER_ID: ${KAFKA_BROKER_ID}
+    #      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
+    #      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
+    #      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
+    #      KAFKA_INTER_BROKER_LISTENER_NAME: ${KAFKA_INTER_BROKER_LISTENER_NAME}
+    #      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+    #      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    #    healthcheck:
+    #      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list" ]
+    #      interval: 30s
+    #      timeout: 10s
+    #      retries: 5
+    #    networks:
+    #      - kafka-net
+
+    #  kafka:
+    #    image: confluentinc/cp-kafka:7.0.0 # Используем стабильную версию, поддерживающую KRaft
+    #    container_name: kafka
+    #    environment:
+    #      KAFKA_KRAFT_MODE: "true"  # Включаем режим KRaft
+    #      KAFKA_LISTENER_SECURITY_PROTOCOL: "PLAINTEXT"
+    #      KAFKA_LISTENER_NAME: "PLAINTEXT"
+    #      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092"
+    #      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:29092"
+    #      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT"
+    #      KAFKA_BROKER_ID: "1"  # Уникальный идентификатор брокера
+    #      KAFKA_LOG_DIRS: "/var/lib/kafka/data"  # Директория для хранения данных
+    #      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"  # Отключаем поддержку метрик Confluent
+    #      KAFKA_LOG_RETENTION_HOURS: "168"  # Параметры для хранения логов
+    #      KAFKA_CONFLUENT_SUPPORT_CUSTOMER_ID: "anonymous"
+    #      KAFKA_ZOOKEEPER_CONNECT: ""  # Убираем Zookeeper, так как он не нужен
+    #    ports:
+    #      - "29092:29092"  # Порты для подключения
+    #    volumes:
+    #      - kafka-data:/var/lib/kafka/data  # Монтируем том для данных Kafka
+    #    healthcheck:
+    #      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list" ]
+    #      interval: 30s
+    #      timeout: 10s
+    #      retries: 5
+    #    networks:
+    #      - kafka-net
+    #
+    #  kafka-ui:
+    #    image: provectuslabs/kafka-ui:latest
+    #    container_name: kafka-ui
+    #    ports:
+    #      - "9999:8080"  # Порт для доступа к UI
+    #    environment:
+    #      DYNAMIC_CONFIG_ENABLED: true
+    #      KAFKA_CLUSTERS_0_NAME: "local-cluster"  # Имя вашего кластера
+    #      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: "kafka:9092"  # Адрес Kafka брокера
+    #      KAFKA_CLUSTERS_0_ZOOKEEPER: ""  # Zookeeper не используется
+    #    depends_on:
+    #      kafka:
+    #        condition: service_healthy
+    #    networks:
+    #      - kafka-net

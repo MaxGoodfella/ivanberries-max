@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ivanberries-max/internal/cache"
 	"ivanberries-max/internal/handlers"
+	"ivanberries-max/internal/kafka"
 	"ivanberries-max/internal/repositories"
 	"ivanberries-max/internal/services"
 	"log"
@@ -33,8 +34,15 @@ func main() {
 
 	redisClient := cache.NewRedisClient(os.Getenv("REDIS_ADDR"))
 
+	kafkaBroker := os.Getenv("KAFKA_BROKER")
+	kafkaTopic := os.Getenv("KAFKA_TOPIC")
+
+	producer := kafka.NewKafkaProducer(kafkaBroker, kafkaTopic)
+	defer producer.Close()
+
 	productRepo := repositories.NewProductRepository(db)
-	productService := services.NewProductService(productRepo)
+	//productService := services.NewProductService(productRepo)
+	productService := services.NewProductService(productRepo, producer)
 	productHandler := handlers.NewProductHandler(productService)
 
 	router := gin.Default()
@@ -59,6 +67,8 @@ func main() {
 		category.PUT("/:id", categoryHandler.UpdateCategory)
 		category.DELETE("/:id", categoryHandler.DeleteCategory)
 	}
+
+	go kafka.StartConsumer(kafkaBroker, kafkaTopic, "catalog-service")
 
 	if err := router.Run(":8080"); err != nil {
 		log.Fatalf("server start error: %s", err)
