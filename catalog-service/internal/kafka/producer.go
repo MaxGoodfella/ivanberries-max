@@ -13,15 +13,34 @@ type Producer struct {
 }
 
 func NewKafkaProducer(broker, topic string) *Producer {
+	createTopic(broker, topic)
 
 	writer := &kafka.Writer{
 		Addr:                   kafka.TCP(broker),
 		Topic:                  topic,
 		Balancer:               &kafka.LeastBytes{},
-		AllowAutoTopicCreation: true,
+		AllowAutoTopicCreation: false,
 	}
 
 	return &Producer{writer: writer}
+}
+
+func createTopic(broker, topic string) {
+	conn, err := kafka.Dial("tcp", broker)
+	if err != nil {
+		log.Fatalf("error connecting to Kafka: %v", err)
+	}
+	defer conn.Close()
+
+	err = conn.CreateTopics(kafka.TopicConfig{
+		Topic:             topic,
+		NumPartitions:     3,
+		ReplicationFactor: 1,
+	})
+	if err != nil {
+		log.Printf("error creating topic %s: %v", topic, err)
+		return
+	}
 }
 
 func (p *Producer) SendMessage(key, value string) error {

@@ -41,7 +41,6 @@ func main() {
 	defer producer.Close()
 
 	productRepo := repositories.NewProductRepository(db)
-	//productService := services.NewProductService(productRepo)
 	productService := services.NewProductService(productRepo, producer)
 	productHandler := handlers.NewProductHandler(productService)
 
