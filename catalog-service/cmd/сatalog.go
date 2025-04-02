@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"ivanberries-max/internal/cache"
-	"ivanberries-max/internal/handlers"
+	"ivanberries-max/internal/handler"
 	"ivanberries-max/internal/kafka"
-	"ivanberries-max/internal/repositories"
-	"ivanberries-max/internal/services"
+	"ivanberries-max/internal/repository"
+	"ivanberries-max/internal/service/logic"
 	"log"
 	"os"
 
@@ -40,31 +40,31 @@ func main() {
 	producer := kafka.NewKafkaProducer(kafkaBroker, kafkaTopic)
 	defer producer.Close()
 
-	productRepo := repositories.NewProductRepository(db)
-	productService := services.NewProductService(productRepo, producer)
-	productHandler := handlers.NewProductHandler(productService)
+	productRepo := repository.NewProductRepository(db)
+	productService := logic.NewProductService(productRepo, producer)
+	productHandler := handler.NewProductHandler(productService)
 
 	router := gin.Default()
 	product := router.Group("/products")
 	{
-		product.GET("/:id", productHandler.GetProductByID)
-		product.GET("/", productHandler.GetAllProducts)
-		product.POST("/", productHandler.CreateProduct)
-		product.PUT("/:id", productHandler.UpdateProduct)
-		product.DELETE("/:id", productHandler.DeleteProduct)
+		product.GET("/:id", productHandler.GetByID)
+		product.GET("/", productHandler.GetAll)
+		product.POST("/", productHandler.Create)
+		product.PUT("/:id", productHandler.Update)
+		product.DELETE("/:id", productHandler.Delete)
 	}
 
-	categoryRepo := repositories.NewCategoryRepository(db)
-	categoryService := services.NewCategoryService(categoryRepo, redisClient)
-	categoryHandler := handlers.NewCategoryHandler(categoryService)
+	categoryRepo := repository.NewCategoryRepository(db)
+	categoryService := logic.NewCategoryService(categoryRepo, redisClient)
+	categoryHandler := handler.NewCategoryHandler(categoryService)
 
 	category := router.Group("/categories")
 	{
-		category.GET("/:id", categoryHandler.GetCategoryByID)
-		category.GET("/", categoryHandler.GetAllCategories)
-		category.POST("/", categoryHandler.CreateCategory)
-		category.PUT("/:id", categoryHandler.UpdateCategory)
-		category.DELETE("/:id", categoryHandler.DeleteCategory)
+		category.GET("/:id", categoryHandler.GetByID)
+		category.GET("/", categoryHandler.GetAll)
+		category.POST("/", categoryHandler.Create)
+		category.PUT("/:id", categoryHandler.Update)
+		category.DELETE("/:id", categoryHandler.Delete)
 	}
 
 	go kafka.StartConsumer(kafkaBroker, kafkaTopic, "catalog-service")

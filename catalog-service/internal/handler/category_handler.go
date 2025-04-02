@@ -1,40 +1,40 @@
-package handlers
+package handler
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"ivanberries-max/internal/models"
-	"ivanberries-max/internal/services"
-	"ivanberries-max/internal/validation/utilities"
+	"ivanberries-max/internal/model"
+	"ivanberries-max/internal/service/logic"
+	"ivanberries-max/internal/service/validation/util"
 	"net/http"
 )
 
 type CategoryHandler struct {
-	service *services.CategoryService
+	service *logic.CategoryService
 }
 
-func NewCategoryHandler(service *services.CategoryService) *CategoryHandler {
+func NewCategoryHandler(service *logic.CategoryService) *CategoryHandler {
 	return &CategoryHandler{service: service}
 }
 
-func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
+func (h *CategoryHandler) GetByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format"})
 		return
 	}
 
-	category, err := h.service.GetCategoryByID(id)
+	category, err := h.service.GetByID(id)
 	if err != nil {
-		c.JSON(utilities.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, category)
 }
 
-func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
-	categories, err := h.service.GetCategories()
+func (h *CategoryHandler) GetAll(c *gin.Context) {
+	categories, err := h.service.GetAll()
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "database error"})
 		return
@@ -43,30 +43,30 @@ func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 	c.JSON(http.StatusOK, categories)
 }
 
-func (h *CategoryHandler) CreateCategory(c *gin.Context) {
-	var category models.Category
+func (h *CategoryHandler) Create(c *gin.Context) {
+	var category model.Category
 
 	if err := c.ShouldBindJSON(&category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "wrong format"})
 		return
 	}
 
-	if err := h.service.CreateCategory(&category); err != nil {
-		c.JSON(utilities.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+	if err := h.service.Create(&category); err != nil {
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, category)
 }
 
-func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
+func (h *CategoryHandler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format"})
 		return
 	}
 
-	var category models.Category
+	var category model.Category
 	if err := c.ShouldBindJSON(&category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "wrong format"})
 		return
@@ -74,16 +74,16 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 
 	category.ID = id
 
-	updatedCategory, err := h.service.UpdateCategory(&category)
+	updatedCategory, err := h.service.Update(&category)
 	if err != nil {
-		c.JSON(utilities.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, updatedCategory)
 }
 
-func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
+func (h *CategoryHandler) Delete(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format"})
@@ -91,7 +91,7 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	}
 
 	if err := h.service.Delete(id); err != nil {
-		c.JSON(utilities.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
 		return
 	}
 

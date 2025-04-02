@@ -1,4 +1,4 @@
-package services
+package logic
 
 import (
 	"errors"
@@ -6,47 +6,47 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"ivanberries-max/internal/kafka"
-	"ivanberries-max/internal/models"
-	"ivanberries-max/internal/repositories"
-	"ivanberries-max/internal/validation/utilities"
-	"ivanberries-max/internal/validation/validators"
+	"ivanberries-max/internal/model"
+	"ivanberries-max/internal/repository"
+	"ivanberries-max/internal/service/validation/util"
+	"ivanberries-max/internal/service/validation/validator"
 	"log"
 	"os"
 )
 
 type ProductService struct {
-	repo     *repositories.ProductRepository
+	repo     *repository.ProductRepository
 	producer *kafka.Producer
 }
 
-func NewProductService(repo *repositories.ProductRepository, producer *kafka.Producer) *ProductService {
+func NewProductService(repo *repository.ProductRepository, producer *kafka.Producer) *ProductService {
 	return &ProductService{repo: repo, producer: producer}
 }
 
-func (s *ProductService) GetProductByID(id uuid.UUID) (*models.Product, error) {
+func (s *ProductService) GetByID(id uuid.UUID) (*model.Product, error) {
 	return s.repo.GetByID(id)
 }
 
-func (s *ProductService) GetProducts() ([]models.Product, error) {
+func (s *ProductService) GetAll() ([]model.Product, error) {
 	return s.repo.GetAll()
 }
 
-func (s *ProductService) CreateProduct(product *models.Product) error {
-	if err := validators.ValidateProduct(product); err != nil {
+func (s *ProductService) Create(product *model.Product) error {
+	if err := validator.ValidateProduct(product); err != nil {
 		return err
 	}
 	return s.repo.Create(product)
 }
 
-func (s *ProductService) UpdateProduct(id uuid.UUID, updates map[string]interface{}) (*models.Product, error) {
-	if err := validators.ValidateProductUpdates(updates); err != nil {
+func (s *ProductService) Update(id uuid.UUID, updates map[string]interface{}) (*model.Product, error) {
+	if err := validator.ValidateProductUpdates(updates); err != nil {
 		return nil, err
 	}
 
 	_, err := s.repo.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, utilities.ErrProductNotFound
+			return nil, util.ErrProductNotFound
 		}
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (s *ProductService) UpdateProduct(id uuid.UUID, updates map[string]interfac
 	if categoryID, ok := updates["category_id"].(string); ok {
 		if err := s.repo.CheckCategoryExists(categoryID); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, utilities.ErrCategoryNotFound
+				return nil, util.ErrCategoryNotFound
 			}
 			return nil, err
 		}
@@ -63,7 +63,7 @@ func (s *ProductService) UpdateProduct(id uuid.UUID, updates map[string]interfac
 	err = s.repo.Update(id, updates)
 	if err != nil {
 		log.Printf("Update failed: %v", err)
-		return nil, utilities.ErrProductUpdateFailed
+		return nil, util.ErrProductUpdateFailed
 	}
 
 	event := fmt.Sprintf(`{"event":"%s","product_id":"%s"}`, os.Getenv("KAFKA_EVENT_PRODUCT_UPDATED"), id)
@@ -79,7 +79,7 @@ func (s *ProductService) UpdateProduct(id uuid.UUID, updates map[string]interfac
 
 func (s *ProductService) Delete(id uuid.UUID) error {
 	if id == uuid.Nil {
-		return utilities.ErrInvalidProductID
+		return util.ErrInvalidProductID
 	}
 
 	return s.repo.Delete(id)

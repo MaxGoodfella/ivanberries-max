@@ -1,23 +1,23 @@
-package handlers
+package handler
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"ivanberries-max/internal/models"
-	"ivanberries-max/internal/services"
-	"ivanberries-max/internal/validation/utilities"
+	"ivanberries-max/internal/model"
+	"ivanberries-max/internal/service/logic"
+	"ivanberries-max/internal/service/validation/util"
 	"net/http"
 )
 
 type ProductHandler struct {
-	service *services.ProductService
+	service *logic.ProductService
 }
 
-func NewProductHandler(service *services.ProductService) *ProductHandler {
+func NewProductHandler(service *logic.ProductService) *ProductHandler {
 	return &ProductHandler{service: service}
 }
 
-func (h *ProductHandler) GetProductByID(c *gin.Context) {
+func (h *ProductHandler) GetByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -25,41 +25,41 @@ func (h *ProductHandler) GetProductByID(c *gin.Context) {
 		return
 	}
 
-	product, err := h.service.GetProductByID(id)
+	product, err := h.service.GetByID(id)
 	if err != nil {
-		c.JSON(utilities.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, product)
 }
 
-func (h *ProductHandler) GetAllProducts(c *gin.Context) {
-	products, err := h.service.GetProducts()
+func (h *ProductHandler) GetAll(c *gin.Context) {
+	products, err := h.service.GetAll()
 	if err != nil {
-		c.JSON(utilities.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, products)
 }
 
-func (h *ProductHandler) CreateProduct(c *gin.Context) {
-	var product models.Product
+func (h *ProductHandler) Create(c *gin.Context) {
+	var product model.Product
 	if err := c.ShouldBindJSON(&product); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "wrong format"})
 		return
 	}
 
-	if err := h.service.CreateProduct(&product); err != nil {
-		c.JSON(utilities.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+	if err := h.service.Create(&product); err != nil {
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, product)
 }
 
-func (h *ProductHandler) UpdateProduct(c *gin.Context) {
+func (h *ProductHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -73,16 +73,16 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	updatedProduct, err := h.service.UpdateProduct(id, updates)
+	updatedProduct, err := h.service.Update(id, updates)
 	if err != nil {
-		c.JSON(utilities.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, updatedProduct)
 }
 
-func (h *ProductHandler) DeleteProduct(c *gin.Context) {
+func (h *ProductHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -92,7 +92,7 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 
 	err = h.service.Delete(id)
 	if err != nil {
-		c.JSON(utilities.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
 		return
 	}
 

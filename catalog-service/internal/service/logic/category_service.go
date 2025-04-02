@@ -1,4 +1,4 @@
-package services
+package logic
 
 import (
 	"encoding/json"
@@ -7,26 +7,26 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"ivanberries-max/internal/cache"
-	"ivanberries-max/internal/models"
-	"ivanberries-max/internal/repositories"
-	"ivanberries-max/internal/validation/utilities"
-	"ivanberries-max/internal/validation/validators"
+	"ivanberries-max/internal/model"
+	"ivanberries-max/internal/repository"
+	"ivanberries-max/internal/service/validation/util"
+	"ivanberries-max/internal/service/validation/validator"
 	"log"
 	"time"
 )
 
 type CategoryService struct {
-	repo        *repositories.CategoryRepository
+	repo        *repository.CategoryRepository
 	redisClient *cache.RedisClient
 }
 
-func NewCategoryService(repo *repositories.CategoryRepository, redisClient *cache.RedisClient) *CategoryService {
+func NewCategoryService(repo *repository.CategoryRepository, redisClient *cache.RedisClient) *CategoryService {
 	return &CategoryService{repo: repo, redisClient: redisClient}
 }
 
-func (s *CategoryService) GetCategoryByID(id uuid.UUID) (*models.Category, error) {
+func (s *CategoryService) GetByID(id uuid.UUID) (*model.Category, error) {
 	cacheKey := fmt.Sprintf("category:%s", id.String())
-	var category *models.Category
+	var category *model.Category
 
 	val, err := s.redisClient.Get(cacheKey)
 	if err == nil && val != "" {
@@ -39,7 +39,7 @@ func (s *CategoryService) GetCategoryByID(id uuid.UUID) (*models.Category, error
 	category, err = s.repo.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, utilities.ErrCategoryNotFound
+			return nil, util.ErrCategoryNotFound
 		}
 		return nil, err
 	}
@@ -52,9 +52,9 @@ func (s *CategoryService) GetCategoryByID(id uuid.UUID) (*models.Category, error
 	return category, nil
 }
 
-func (s *CategoryService) GetCategories() ([]models.Category, error) {
+func (s *CategoryService) GetAll() ([]model.Category, error) {
 	cacheKey := "categories"
-	var categories []models.Category
+	var categories []model.Category
 
 	val, err := s.redisClient.Get(cacheKey)
 	if err == nil && val != "" {
@@ -77,37 +77,37 @@ func (s *CategoryService) GetCategories() ([]models.Category, error) {
 	return categories, nil
 }
 
-func (s *CategoryService) CreateCategory(category *models.Category) error {
-	if err := validators.ValidateCategory(category); err != nil {
+func (s *CategoryService) Create(category *model.Category) error {
+	if err := validator.ValidateCategory(category); err != nil {
 		return err
 	}
 
 	if err := s.repo.Create(category); err != nil {
-		return utilities.ErrCategoryCreationFailed
+		return util.ErrCategoryCreationFailed
 	}
 
 	return nil
 }
 
-func (s *CategoryService) UpdateCategory(category *models.Category) (*models.Category, error) {
+func (s *CategoryService) Update(category *model.Category) (*model.Category, error) {
 	if category.ID == uuid.Nil {
-		return nil, utilities.ErrInvalidCategoryID
+		return nil, util.ErrInvalidCategoryID
 	}
 
-	if err := validators.ValidateCategory(category); err != nil {
+	if err := validator.ValidateCategory(category); err != nil {
 		return nil, err
 	}
 
 	_, err := s.repo.GetByID(category.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, utilities.ErrCategoryNotFound
+			return nil, util.ErrCategoryNotFound
 		}
 		return nil, err
 	}
 
 	if err := s.repo.Update(category); err != nil {
-		return nil, utilities.ErrCategoryUpdateFailed
+		return nil, util.ErrCategoryUpdateFailed
 	}
 
 	cacheKey := fmt.Sprintf("category:%s", category.ID.String())
@@ -121,14 +121,14 @@ func (s *CategoryService) UpdateCategory(category *models.Category) (*models.Cat
 
 func (s *CategoryService) Delete(id uuid.UUID) error {
 	if id == uuid.Nil {
-		return utilities.ErrInvalidCategoryID
+		return util.ErrInvalidCategoryID
 	}
 
 	if err := s.repo.Delete(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return utilities.ErrCategoryNotFound
+			return util.ErrCategoryNotFound
 		}
-		return utilities.ErrCategoryDeleteFailed
+		return util.ErrCategoryDeleteFailed
 	}
 
 	cacheKey := fmt.Sprintf("category:%s", id.String())
