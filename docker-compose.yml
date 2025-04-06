@@ -99,6 +99,33 @@ services:
     networks:
       - backend_network
 
+  users-service:
+    build:
+      context: ./users-service
+      dockerfile: Dockerfile
+    container_name: users-service
+    restart: always
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: "5432"
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: "host=${POSTGRES_HOST} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} port=${POSTGRES_PORT} sslmode=disable"
+      REDIS_ADDR: ${REDIS_ADDR}
+    env_file:
+      - .env
+    networks:
+      - backend_network
+
 volumes:
   redis-data:
   kafka-data:
