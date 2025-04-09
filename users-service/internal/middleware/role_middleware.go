@@ -2,42 +2,41 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"strings"
 	"users-service/internal/service/logic"
+	"users-service/internal/util"
 )
 
 func RoleMiddleware(authService *logic.AuthService, requiredRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token is missing"})
+			c.JSON(util.GetHTTPStatusCode(util.ErrTokenMissing), gin.H{"error": util.ErrTokenMissing.Error()})
 			c.Abort()
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token format"})
+			c.JSON(util.GetHTTPStatusCode(util.ErrTokenFormatInvalid), gin.H{"error": util.ErrTokenFormatInvalid.Error()})
 			c.Abort()
 			return
 		}
 
 		claims, err := authService.ParseToken(parts[1])
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			c.JSON(util.GetHTTPStatusCode(util.ErrInvalidToken), gin.H{"error": err.Error()})
 			c.Abort()
 			return
 		}
 
 		roleName := authService.GetRoleName(claims.RoleID)
 		if roleName == "" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "role not found"})
+			c.JSON(util.GetHTTPStatusCode(util.ErrRoleNotFound), gin.H{"error": util.ErrRoleNotFound.Error()})
 			c.Abort()
 			return
 		}
 
-		// Проверяем, подходит ли роль
 		isAllowed := false
 		for _, r := range requiredRoles {
 			if roleName == r {
@@ -47,7 +46,7 @@ func RoleMiddleware(authService *logic.AuthService, requiredRoles ...string) gin
 		}
 
 		if !isAllowed {
-			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			c.JSON(util.GetHTTPStatusCode(util.ErrForbidden), gin.H{"error": util.ErrForbidden.Error()})
 			c.Abort()
 			return
 		}

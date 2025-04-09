@@ -7,23 +7,29 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"strconv"
 	"time"
+	"users-service/internal/cache"
 	"users-service/internal/model"
 	"users-service/internal/repository"
-	"users-service/internal/service/validation/util"
-	"users-service/internal/service/validation/validator"
+	"users-service/internal/service/validation"
+	"users-service/internal/util"
 )
 
 type AuthService struct {
-	repo      *repository.AuthRepository
-	jwtSecret string
+	repo        *repository.AuthRepository
+	jwtSecret   string
+	redisClient *cache.RedisClient
 }
 
-func NewAuthService(repo *repository.AuthRepository, jwtSecret string) *AuthService {
-	return &AuthService{repo: repo, jwtSecret: jwtSecret}
+func NewAuthService(repo *repository.AuthRepository, jwtSecret string, redisClient *cache.RedisClient) *AuthService {
+	return &AuthService{
+		repo:        repo,
+		jwtSecret:   jwtSecret,
+		redisClient: redisClient,
+	}
 }
 
 func (s *AuthService) Register(email, password, roleID string) (*model.User, error) {
-	if err := validator.ValidateUser(email, password, roleID); err != nil {
+	if err := validation.ValidateUser(email, password, roleID); err != nil {
 		return nil, err
 	}
 
@@ -76,11 +82,42 @@ func (s *AuthService) Authenticate(email, password string) (string, string, erro
 		return "", "", err
 	}
 
-	if err := s.repo.StoreRefreshToken(user.ID.String(), refreshToken, time.Now().Add(7*24*time.Hour)); err != nil {
+	err = s.redisClient.StoreRefreshToken(user.ID.String(), refreshToken, 7*24*time.Hour)
+	if err != nil {
 		return "", "", err
 	}
 
 	return accessToken, refreshToken, nil
+}
+
+func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error) {
+	claims, err := s.ParseToken(refreshToken)
+	if err != nil {
+		return "", "", util.ErrTokenInvalid
+	}
+
+	storedToken, err := s.redisClient.GetRefreshToken(claims.UserID.String())
+	if err != nil || storedToken != refreshToken {
+		return "", "", util.ErrTokenInvalidOrExpired
+	}
+
+	accessToken, err := s.GenerateToken(claims.UserID.String(), strconv.Itoa(int(claims.RoleID)), 15*time.Minute)
+	if err != nil {
+		return "", "", err
+	}
+	newRefreshToken, err := s.GenerateToken(claims.UserID.String(), strconv.Itoa(int(claims.RoleID)), 7*24*time.Hour)
+	if err != nil {
+		return "", "", err
+	}
+
+	if err := s.redisClient.DeleteKey("refresh:" + claims.UserID.String()); err != nil {
+		return "", "", err
+	}
+	if err := s.redisClient.StoreRefreshToken(claims.UserID.String(), newRefreshToken, 7*24*time.Hour); err != nil {
+		return "", "", err
+	}
+
+	return accessToken, newRefreshToken, nil
 }
 
 func (s *AuthService) GetByID(userID string) (*model.User, error) {
@@ -119,38 +156,15 @@ func (s *AuthService) GenerateToken(userID, roleID string, duration time.Duratio
 	return token.SignedString([]byte(s.jwtSecret))
 }
 
-func (s *AuthService) RefreshTokens(refreshToken string) (string, string, error) {
-	_, err := s.repo.GetRefreshToken(refreshToken)
-	if err != nil {
-		return "", "", util.ErrTokenInvalidOrExpired
-	}
-
-	claims, err := s.ParseToken(refreshToken)
-	if err != nil {
-		return "", "", util.ErrTokenInvalid
-	}
-
-	accessToken, err := s.GenerateToken(claims.UserID.String(), strconv.Itoa(int(claims.RoleID)), 15*time.Minute)
-	if err != nil {
-		return "", "", err
-	}
-	newRefreshToken, err := s.GenerateToken(claims.UserID.String(), strconv.Itoa(int(claims.RoleID)), 7*24*time.Hour)
-	if err != nil {
-		return "", "", err
-	}
-
-	if err := s.repo.DeleteRefreshToken(refreshToken); err != nil {
-		return "", "", err
-	}
-
-	if err := s.repo.StoreRefreshToken(claims.UserID.String(), newRefreshToken, time.Now().Add(7*24*time.Hour)); err != nil {
-		return "", "", err
-	}
-
-	return accessToken, newRefreshToken, nil
-}
-
 func (s *AuthService) ParseToken(tokenString string) (*model.Claims, error) {
+	blacklisted, err := s.redisClient.IsTokenBlacklisted(tokenString)
+	if err != nil {
+		return nil, err
+	}
+	if blacklisted {
+		return nil, util.ErrTokenBlacklisted
+	}
+
 	token, err := jwt.ParseWithClaims(tokenString, &model.Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, util.ErrSigningMethodInvalid
@@ -168,4 +182,18 @@ func (s *AuthService) ParseToken(tokenString string) (*model.Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func (s *AuthService) Logout(token string) error {
+	claims, err := s.ParseToken(token)
+	if err != nil {
+		return err
+	}
+
+	expiry := time.Until(claims.ExpiresAt.Time)
+	return s.redisClient.BlacklistAccessToken(token, expiry)
+}
+
+func (s *AuthService) IsBlacklisted(token string) (bool, error) {
+	return s.redisClient.IsTokenBlacklisted(token)
 }

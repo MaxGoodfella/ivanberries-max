@@ -5,7 +5,7 @@ run:
 	docker-compose up -d
 
 migrate:
-	docker-compose exec catalog-service goose -dir /app/catalog-service/db/migrations up
+	#docker-compose exec catalog-service goose -dir /app/catalog-service/db/migrations up
 	docker-compose exec users-service goose -dir /app/users-service/db/migrations up
 
 down:

@@ -59,6 +59,16 @@ func (r *AuthRepository) StoreRefreshToken(userID string, refreshToken string, e
 		return err
 	}
 
+	var existingToken model.RefreshToken
+	err = r.db.Where("user_id = ?", parsedUserID).First(&existingToken).Error
+	if err == nil {
+		existingToken.Token = refreshToken
+		existingToken.ExpiresAt = expiration
+		return r.db.Save(&existingToken).Error
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
 	refreshTokenRecord := model.RefreshToken{
 		UserID:    parsedUserID,
 		Token:     refreshToken,

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"users-service/config"
+	"users-service/internal/cache"
 	"users-service/internal/handler"
 	"users-service/internal/middleware"
 	"users-service/internal/repository"
@@ -32,8 +33,10 @@ func main() {
 		log.Fatalf("database connection error: %s", err)
 	}
 
+	redisClient := cache.NewRedisClient(os.Getenv("REDIS_ADDR"))
+
 	authRepo := repository.NewAuthRepository(db)
-	authService := logic.NewAuthService(authRepo, cfg.JWTSecret)
+	authService := logic.NewAuthService(authRepo, cfg.JWTSecret, redisClient)
 	authHandler := handler.NewAuthHandler(authService)
 
 	router := gin.Default()
@@ -42,10 +45,9 @@ func main() {
 	{
 		auth.POST("/register", authHandler.Register)
 		auth.POST("/login", authHandler.Login)
-
 		auth.POST("/refresh", middleware.RoleMiddleware(authService, "admin"), authHandler.RefreshToken)
-
 		auth.GET("/me", middleware.JWTMiddleware(authService), authHandler.Me)
+		auth.POST("/logout", authHandler.Logout)
 	}
 
 	if err := router.Run(":8081"); err != nil {

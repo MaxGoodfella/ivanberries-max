@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"users-service/internal/model"
 	"users-service/internal/service/logic"
-	"users-service/internal/service/validation/util"
+	"users-service/internal/util"
 )
 
 type AuthHandler struct {
@@ -21,7 +21,7 @@ func NewAuthHandler(authService *logic.AuthService) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req model.RegisterUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(util.GetHTTPStatusCode(util.ErrBindJSONFailed), gin.H{"error": err.Error()})
 		return
 	}
 
@@ -43,7 +43,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req model.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(util.GetHTTPStatusCode(util.ErrBindJSONFailed), gin.H{"error": err.Error()})
 		return
 	}
 
@@ -62,19 +62,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) Me(c *gin.Context) {
 	userIDRaw, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(util.GetHTTPStatusCode(util.ErrUnauthorized), gin.H{"error": util.ErrUnauthorized.Error()})
 		return
 	}
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid userID format"})
+		c.JSON(util.GetHTTPStatusCode(util.ErrUserIDInvalid), gin.H{"error": util.ErrUserIDInvalid.Error()})
 		return
 	}
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid UUID"})
+		c.JSON(util.GetHTTPStatusCode(util.ErrUUIDInvalid), gin.H{"error": err.Error()})
 		return
 	}
 
@@ -96,7 +96,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req model.TokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
+		c.JSON(util.GetHTTPStatusCode(util.ErrBindJSONFailed), gin.H{"error": err.Error()})
 		return
 	}
 
@@ -110,4 +110,24 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 	})
+}
+
+func (h *AuthHandler) Logout(c *gin.Context) {
+	tokenString := c.GetHeader("Authorization")
+	if tokenString == "" {
+		c.JSON(util.GetHTTPStatusCode(util.ErrTokenMissing), gin.H{"error": util.ErrTokenMissing.Error()})
+		return
+	}
+
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+
+	err := h.authService.Logout(tokenString)
+	if err != nil {
+		c.JSON(util.GetHTTPStatusCode(err), gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "successfully logged out"})
 }

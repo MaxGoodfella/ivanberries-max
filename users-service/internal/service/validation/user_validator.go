@@ -1,8 +1,8 @@
-package validator
+package validation
 
 import (
 	"strings"
-	"users-service/internal/service/validation/util"
+	"users-service/internal/util"
 )
 
 func ValidateUser(email, password, roleID string) error {

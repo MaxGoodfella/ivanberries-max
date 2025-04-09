@@ -19,4 +19,5 @@ var (
 	ErrTokenInvalidOrExpired = errors.New("invalid or expired refresh token")
 	ErrTokenInvalid          = errors.New("invalid refresh token")
 	ErrSigningMethodInvalid  = errors.New("invalid signing method")
+	ErrTokenBlacklisted      = errors.New("token is blacklisted")
 )
