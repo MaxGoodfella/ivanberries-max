@@ -1,9 +1,9 @@
 package validator
 
 import (
+	"catalog-service/internal/model"
+	"catalog-service/internal/service/validation/util"
 	"fmt"
-	"ivanberries-max/internal/model"
-	util2 "ivanberries-max/internal/service/validation/util"
 	"strconv"
 	"strings"
 )
@@ -17,23 +17,23 @@ var allowedFields = map[string]bool{
 
 func ValidateProduct(product *model.Product) error {
 	if strings.TrimSpace(product.Name) == "" {
-		return util2.ErrProductNameEmpty
+		return util.ErrProductNameEmpty
 	}
-	if !util2.NameRegexp.MatchString(product.Name) {
-		return util2.ErrProductNameInvalid
+	if !util.NameRegexp.MatchString(product.Name) {
+		return util.ErrProductNameInvalid
 	}
-	if !util2.ContainsLetter.MatchString(product.Name) {
-		return util2.ErrProductNameNoLetter
+	if !util.ContainsLetter.MatchString(product.Name) {
+		return util.ErrProductNameNoLetter
 	}
-	if !util2.DescriptionRegexp.MatchString(product.Description) {
-		return util2.ErrProductDescriptionInvalid
+	if !util.DescriptionRegexp.MatchString(product.Description) {
+		return util.ErrProductDescriptionInvalid
 	}
 	if product.Price <= 0 {
-		return util2.ErrProductPriceInvalid
+		return util.ErrProductPriceInvalid
 	}
 	priceStr := strconv.FormatFloat(product.Price, 'f', -1, 64)
-	if !util2.PriceRegexp.MatchString(priceStr) {
-		return util2.ErrProductPriceInvalid
+	if !util.PriceRegexp.MatchString(priceStr) {
+		return util.ErrProductPriceInvalid
 	}
 	return nil
 }
@@ -47,29 +47,29 @@ func ValidateProductUpdates(updates map[string]interface{}) error {
 
 	if name, ok := updates["name"].(string); ok {
 		if strings.TrimSpace(name) == "" {
-			return util2.ErrProductNameEmpty
+			return util.ErrProductNameEmpty
 		}
-		if !util2.NameRegexp.MatchString(name) {
-			return util2.ErrProductNameInvalid
+		if !util.NameRegexp.MatchString(name) {
+			return util.ErrProductNameInvalid
 		}
-		if !util2.ContainsLetter.MatchString(name) {
-			return util2.ErrProductNameNoLetter
+		if !util.ContainsLetter.MatchString(name) {
+			return util.ErrProductNameNoLetter
 		}
 	}
 
 	if description, ok := updates["description"].(string); ok {
-		if !util2.DescriptionRegexp.MatchString(description) {
-			return util2.ErrProductDescriptionInvalid
+		if !util.DescriptionRegexp.MatchString(description) {
+			return util.ErrProductDescriptionInvalid
 		}
 	}
 
 	if price, ok := updates["price"].(float64); ok {
 		if price <= 0 {
-			return util2.ErrProductPriceInvalid
+			return util.ErrProductPriceInvalid
 		}
 		priceStr := strconv.FormatFloat(price, 'f', -1, 64)
-		if !util2.PriceRegexp.MatchString(priceStr) {
-			return util2.ErrProductPriceInvalid
+		if !util.PriceRegexp.MatchString(priceStr) {
+			return util.ErrProductPriceInvalid
 		}
 	}
 

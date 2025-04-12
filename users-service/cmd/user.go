@@ -8,11 +8,11 @@ import (
 	"log"
 	"os"
 	"users-service/config"
-	"users-service/internal/cache"
-	"users-service/internal/handler"
-	"users-service/internal/middleware"
-	"users-service/internal/repository"
-	"users-service/internal/service/logic"
+	"users-service/pkg/cache"
+	"users-service/pkg/handler"
+	"users-service/pkg/middleware"
+	"users-service/pkg/repository"
+	"users-service/pkg/service/logic"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 		log.Fatalf("database connection error: %s", err)
 	}
 
-	redisClient := cache.NewRedisClient(os.Getenv("REDIS_ADDR"))
+	redisClient := cache.NewRedisClient(os.Getenv("REDIS_ADDR"), 1)
 
 	authRepo := repository.NewAuthRepository(db)
 	authService := logic.NewAuthService(authRepo, cfg.JWTSecret, redisClient)

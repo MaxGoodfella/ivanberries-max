@@ -35,69 +35,69 @@ services:
     networks:
       - backend_network
 
-#  kafka:
-#    image: 'bitnami/kafka:latest'
-#    container_name: kafka
-#    ports:
-#      - "9092:9092"
-#    environment:
-#      - KAFKA_ENABLE_KRAFT=${KAFKA_ENABLE_KRAFT}
-#      - KAFKA_CFG_PROCESS_ROLES=${KAFKA_CFG_PROCESS_ROLES}
-#      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=${KAFKA_CFG_CONTROLLER_LISTENER_NAMES}
-#      - KAFKA_CFG_LISTENERS=${KAFKA_CFG_LISTENERS}
-#      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=${KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP}
-#      - KAFKA_CFG_ADVERTISED_LISTENERS=${KAFKA_CFG_ADVERTISED_LISTENERS}
-#      - KAFKA_BROKER_ID=${KAFKA_BROKER_ID}
-#      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=${KAFKA_CFG_CONTROLLER_QUORUM_VOTERS}
-#      - KAFKA_CFG_NODE_ID=${KAFKA_CFG_NODE_ID}
-#      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=${KAFKA_CFG_INTER_BROKER_LISTENER_NAME}
-#      - ALLOW_PLAINTEXT_LISTENER=${ALLOW_PLAINTEXT_LISTENER}
-#      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_KRAFT_CLUSTER_ID}
-#      - KAFKA_BROKER=${KAFKA_BROKER}
-#      - KAFKA_TOPIC=${KAFKA_TOPIC}
-#      - KAFKA_EVENT_PRODUCT_UPDATED=${KAFKA_EVENT_PRODUCT_UPDATED}
-#    volumes:
-#      - kafka-data:/bitnami/kafka
-#    healthcheck:
-#      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092"]
-#      interval: 30s
-#      retries: 3
-#      timeout: 5s
-#      start_period: 10s
-#    networks:
-#      - backend_network
-#
-#  catalog-service:
-#    build:
-#      context: ./catalog-service
-#      dockerfile: Dockerfile
-#    container_name: catalog-service
-#    restart: always
-#    ports:
-#      - "8080:8080"
-#    depends_on:
-#      postgres_db:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_healthy
-#    environment:
-#      POSTGRES_DB: ${POSTGRES_DB}
-#      POSTGRES_USER: ${POSTGRES_USER}
-#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#      POSTGRES_HOST: ${POSTGRES_HOST}
-#      POSTGRES_PORT: "5432"
-#      GOOSE_DRIVER: postgres
-#      GOOSE_DBSTRING: "host=${POSTGRES_HOST} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} port=${POSTGRES_PORT} sslmode=disable"
-#      REDIS_ADDR: ${REDIS_ADDR}
-#      KAFKA_BROKER: ${KAFKA_BROKER}
-#      KAFKA_TOPIC: ${KAFKA_TOPIC}
-#      KAFKA_EVENT_PRODUCT_UPDATED: ${KAFKA_EVENT_PRODUCT_UPDATED}
-#    env_file:
-#      - .env
-#    networks:
-#      - backend_network
+  kafka:
+    image: 'bitnami/kafka:latest'
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_ENABLE_KRAFT=${KAFKA_ENABLE_KRAFT}
+      - KAFKA_CFG_PROCESS_ROLES=${KAFKA_CFG_PROCESS_ROLES}
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=${KAFKA_CFG_CONTROLLER_LISTENER_NAMES}
+      - KAFKA_CFG_LISTENERS=${KAFKA_CFG_LISTENERS}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=${KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP}
+      - KAFKA_CFG_ADVERTISED_LISTENERS=${KAFKA_CFG_ADVERTISED_LISTENERS}
+      - KAFKA_BROKER_ID=${KAFKA_BROKER_ID}
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=${KAFKA_CFG_CONTROLLER_QUORUM_VOTERS}
+      - KAFKA_CFG_NODE_ID=${KAFKA_CFG_NODE_ID}
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=${KAFKA_CFG_INTER_BROKER_LISTENER_NAME}
+      - ALLOW_PLAINTEXT_LISTENER=${ALLOW_PLAINTEXT_LISTENER}
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_KRAFT_CLUSTER_ID}
+      - KAFKA_BROKER=${KAFKA_BROKER}
+      - KAFKA_TOPIC=${KAFKA_TOPIC}
+      - KAFKA_EVENT_PRODUCT_UPDATED=${KAFKA_EVENT_PRODUCT_UPDATED}
+    volumes:
+      - kafka-data:/bitnami/kafka
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      retries: 3
+      timeout: 5s
+      start_period: 10s
+    networks:
+      - backend_network
+
+  catalog-service:
+    build:
+      context: ./catalog-service
+      dockerfile: Dockerfile
+    container_name: catalog-service
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: "5432"
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: "host=${POSTGRES_HOST} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} port=${POSTGRES_PORT} sslmode=disable"
+      REDIS_ADDR: ${REDIS_ADDR}
+      KAFKA_BROKER: ${KAFKA_BROKER}
+      KAFKA_TOPIC: ${KAFKA_TOPIC}
+      KAFKA_EVENT_PRODUCT_UPDATED: ${KAFKA_EVENT_PRODUCT_UPDATED}
+    env_file:
+      - .env
+    networks:
+      - backend_network
 
   users-service:
     build:

@@ -2,7 +2,7 @@ package validation
 
 import (
 	"strings"
-	"users-service/internal/util"
+	"users-service/pkg/util"
 )
 
 func ValidateUser(email, password, roleID string) error {

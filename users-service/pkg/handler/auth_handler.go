@@ -5,9 +5,9 @@ import (
 	"github.com/google/uuid"
 	"net/http"
 	"strconv"
-	"users-service/internal/model"
-	"users-service/internal/service/logic"
-	"users-service/internal/util"
+	"users-service/pkg/model"
+	"users-service/pkg/service/logic"
+	"users-service/pkg/util"
 )
 
 type AuthHandler struct {

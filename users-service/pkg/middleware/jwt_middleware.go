@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"strings"
-	"users-service/internal/service/logic"
-	"users-service/internal/util"
+	"users-service/pkg/service/logic"
+	"users-service/pkg/util"
 )
 
-func RoleMiddleware(authService *logic.AuthService, requiredRoles ...string) gin.HandlerFunc {
+func JWTMiddleware(authService *logic.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -23,7 +24,21 @@ func RoleMiddleware(authService *logic.AuthService, requiredRoles ...string) gin
 			return
 		}
 
-		claims, err := authService.ParseToken(parts[1])
+		token := parts[1]
+
+		isBlacklisted, err := authService.IsBlacklisted(token)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.Abort()
+			return
+		}
+		if isBlacklisted {
+			c.JSON(util.GetHTTPStatusCode(util.ErrBlacklistedToken), gin.H{"error": util.ErrBlacklistedToken.Error()})
+			c.Abort()
+			return
+		}
+
+		claims, err := authService.ParseToken(token)
 		if err != nil {
 			c.JSON(util.GetHTTPStatusCode(util.ErrInvalidToken), gin.H{"error": err.Error()})
 			c.Abort()
@@ -31,25 +46,6 @@ func RoleMiddleware(authService *logic.AuthService, requiredRoles ...string) gin
 		}
 
 		roleName := authService.GetRoleName(claims.RoleID)
-		if roleName == "" {
-			c.JSON(util.GetHTTPStatusCode(util.ErrRoleNotFound), gin.H{"error": util.ErrRoleNotFound.Error()})
-			c.Abort()
-			return
-		}
-
-		isAllowed := false
-		for _, r := range requiredRoles {
-			if roleName == r {
-				isAllowed = true
-				break
-			}
-		}
-
-		if !isAllowed {
-			c.JSON(util.GetHTTPStatusCode(util.ErrForbidden), gin.H{"error": util.ErrForbidden.Error()})
-			c.Abort()
-			return
-		}
 
 		c.Set("userID", claims.UserID.String())
 		c.Set("role", roleName)
