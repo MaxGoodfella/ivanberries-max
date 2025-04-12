@@ -1,10 +1,10 @@
 package repository
 
 import (
+	"catalog-service/internal/model"
 	"errors"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"ivanberries-max/internal/model"
 )
 
 type CategoryRepository struct {

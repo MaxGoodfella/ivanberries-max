@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
-	"users-service/internal/model"
+	"users-service/pkg/model"
 )
 
 type AuthRepository struct {
@@ -91,4 +91,20 @@ func (r *AuthRepository) GetRefreshToken(token string) (*model.RefreshToken, err
 
 func (r *AuthRepository) DeleteRefreshToken(token string) error {
 	return r.db.Where("token = ?", token).Delete(&model.RefreshToken{}).Error
+}
+
+func (r *AuthRepository) GetPermissionsForRole(roleID int) ([]model.Permission, error) {
+	var permissions []model.Permission
+
+	// Получаем разрешения для роли
+	err := r.db.Table("permissions").
+		Joins("JOIN role_permissions ON permissions.id = role_permissions.permission_id").
+		Where("role_permissions.role_id = ?", roleID).
+		Find(&permissions).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return permissions, nil
 }
