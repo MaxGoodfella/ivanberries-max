@@ -1,11 +1,11 @@
 package middleware
 
 import (
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/service/logic"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/util"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
-	"users-service/pkg/service/logic"
-	"users-service/pkg/util"
 )
 
 func JWTMiddleware(authService *logic.AuthService) gin.HandlerFunc {

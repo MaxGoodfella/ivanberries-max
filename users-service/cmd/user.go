@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/config"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/cache"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/handler"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/middleware"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/repository"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/service/logic"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
 	"os"
-	"users-service/config"
-	"users-service/pkg/cache"
-	"users-service/pkg/handler"
-	"users-service/pkg/middleware"
-	"users-service/pkg/repository"
-	"users-service/pkg/service/logic"
 )
 
 func main() {

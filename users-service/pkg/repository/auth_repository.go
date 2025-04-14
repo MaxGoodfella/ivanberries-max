@@ -2,10 +2,10 @@ package repository
 
 import (
 	"errors"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
-	"users-service/pkg/model"
 )
 
 type AuthRepository struct {

@@ -69,8 +69,8 @@ services:
 
   catalog-service:
     build:
-      context: ./catalog-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: catalog-service/Dockerfile
     container_name: catalog-service
     restart: always
     ports:

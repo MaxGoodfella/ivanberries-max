@@ -2,16 +2,16 @@ package logic
 
 import (
 	"fmt"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/cache"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/model"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/repository"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/service/validation"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/util"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"strconv"
 	"time"
-	"users-service/pkg/cache"
-	"users-service/pkg/model"
-	"users-service/pkg/repository"
-	"users-service/pkg/service/validation"
-	"users-service/pkg/util"
 )
 
 type AuthService struct {
