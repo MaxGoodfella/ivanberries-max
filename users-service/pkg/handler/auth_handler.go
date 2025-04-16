@@ -1,13 +1,13 @@
 package handler
 
 import (
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/model"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/service/logic"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
 	"strconv"
-	"users-service/internal/model"
-	"users-service/internal/service/logic"
-	"users-service/internal/util"
 )
 
 type AuthHandler struct {

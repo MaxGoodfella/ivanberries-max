@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"catalog-service/internal/model"
+	"catalog-service/internal/service/logic"
+	"catalog-service/internal/service/validation/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"ivanberries-max/internal/model"
-	"ivanberries-max/internal/service/logic"
-	"ivanberries-max/internal/service/validation/util"
 	"net/http"
 )
 

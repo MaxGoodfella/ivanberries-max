@@ -4,7 +4,7 @@ RUN apk add --no-cache git
 
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
-WORKDIR /app
+WORKDIR /app/users-service
 
 COPY go.mod go.sum ./
 RUN go mod tidy

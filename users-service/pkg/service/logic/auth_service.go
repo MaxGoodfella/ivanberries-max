@@ -2,16 +2,16 @@ package logic
 
 import (
 	"fmt"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/cache"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/model"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/repository"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/service/validation"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/util"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"strconv"
 	"time"
-	"users-service/internal/cache"
-	"users-service/internal/model"
-	"users-service/internal/repository"
-	"users-service/internal/service/validation"
-	"users-service/internal/util"
 )
 
 type AuthService struct {
@@ -196,4 +196,18 @@ func (s *AuthService) Logout(token string) error {
 
 func (s *AuthService) IsBlacklisted(token string) (bool, error) {
 	return s.redisClient.IsTokenBlacklisted(token)
+}
+
+func (s *AuthService) HasPermission(roleID int, permissionCode string) bool {
+	permissions, err := s.repo.GetPermissionsForRole(roleID)
+	if err != nil {
+		return false
+	}
+
+	for _, permission := range permissions {
+		if permission.Code == permissionCode {
+			return true
+		}
+	}
+	return false
 }

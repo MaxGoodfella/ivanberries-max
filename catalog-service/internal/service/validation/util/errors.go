@@ -22,4 +22,5 @@ var (
 	ErrProductCreationFailed     = errors.New("failed to create product")
 	ErrProductUpdateFailed       = errors.New("failed to update product")
 	ErrProductDeleteFailed       = errors.New("failed to delete product")
+	ErrInvalidField              = errors.New("invalid field name")
 )

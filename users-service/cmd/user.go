@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/config"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/cache"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/handler"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/middleware"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/repository"
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/service/logic"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
 	"os"
-	"users-service/config"
-	"users-service/internal/cache"
-	"users-service/internal/handler"
-	"users-service/internal/middleware"
-	"users-service/internal/repository"
-	"users-service/internal/service/logic"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 		log.Fatalf("database connection error: %s", err)
 	}
 
-	redisClient := cache.NewRedisClient(os.Getenv("REDIS_ADDR"))
+	redisClient := cache.NewRedisClient(os.Getenv("REDIS_ADDR"), 1)
 
 	authRepo := repository.NewAuthRepository(db)
 	authService := logic.NewAuthService(authRepo, cfg.JWTSecret, redisClient)

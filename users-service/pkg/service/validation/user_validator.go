@@ -1,8 +1,8 @@
 package validation
 
 import (
+	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/util"
 	"strings"
-	"users-service/internal/util"
 )
 
 func ValidateUser(email, password, roleID string) error {

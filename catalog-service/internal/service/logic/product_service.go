@@ -1,15 +1,15 @@
 package logic
 
 import (
+	"catalog-service/internal/kafka"
+	"catalog-service/internal/model"
+	"catalog-service/internal/repository"
+	"catalog-service/internal/service/validation/util"
+	"catalog-service/internal/service/validation/validator"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"ivanberries-max/internal/kafka"
-	"ivanberries-max/internal/model"
-	"ivanberries-max/internal/repository"
-	"ivanberries-max/internal/service/validation/util"
-	"ivanberries-max/internal/service/validation/validator"
 	"log"
 	"os"
 )
