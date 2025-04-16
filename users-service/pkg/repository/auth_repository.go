@@ -96,7 +96,6 @@ func (r *AuthRepository) DeleteRefreshToken(token string) error {
 func (r *AuthRepository) GetPermissionsForRole(roleID int) ([]model.Permission, error) {
 	var permissions []model.Permission
 
-	// Получаем разрешения для роли
 	err := r.db.Table("permissions").
 		Joins("JOIN role_permissions ON permissions.id = role_permissions.permission_id").
 		Where("role_permissions.role_id = ?", roleID).

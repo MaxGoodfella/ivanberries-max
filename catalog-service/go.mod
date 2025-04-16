@@ -12,7 +12,7 @@ require (
 	gorm.io/gorm v1.25.12
 )
 
-replace github.com/MaxGoodfella/ivanberries-max/users-service => ./users-service
+replace github.com/MaxGoodfella/ivanberries-max/users-service => ../users-service
 
 require (
 	github.com/bytedance/sonic v1.13.1 // indirect

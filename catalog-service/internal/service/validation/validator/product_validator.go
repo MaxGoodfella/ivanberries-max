@@ -3,7 +3,6 @@ package validator
 import (
 	"catalog-service/internal/model"
 	"catalog-service/internal/service/validation/util"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -41,7 +40,7 @@ func ValidateProduct(product *model.Product) error {
 func ValidateProductUpdates(updates map[string]interface{}) error {
 	for field := range updates {
 		if !allowedFields[field] {
-			return fmt.Errorf("invalid field: %s", field)
+			return util.ErrInvalidField
 		}
 	}
 

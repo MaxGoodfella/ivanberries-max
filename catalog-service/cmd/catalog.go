@@ -7,11 +7,6 @@ import (
 	repo1 "catalog-service/internal/repository"
 	logic1 "catalog-service/internal/service/logic"
 
-	//cache2 "users-service/pkg/cache"
-	//"users-service/pkg/middleware"
-	//repo2 "users-service/pkg/repository"
-	//logic2 "users-service/pkg/service/logic"
-
 	cache2 "github.com/MaxGoodfella/ivanberries-max/users-service/pkg/cache"
 	"github.com/MaxGoodfella/ivanberries-max/users-service/pkg/middleware"
 	repo2 "github.com/MaxGoodfella/ivanberries-max/users-service/pkg/repository"
@@ -55,29 +50,9 @@ func main() {
 	productService := logic1.NewProductService(productRepo, producer)
 	productHandler := handler.NewProductHandler(productService)
 
-	//
-	//router := gin.Default()
-	//product := router.Group("/products")
-	//{
-	//	product.GET("/:id", productHandler.GetByID)
-	//	product.GET("/", productHandler.GetAll)
-	//	product.POST("/", productHandler.Create)
-	//	product.PUT("/:id", productHandler.Update)
-	//	product.DELETE("/:id", productHandler.Delete)
-	//}
-	//
 	categoryRepo := repo1.NewCategoryRepository(db)
 	categoryService := logic1.NewCategoryService(categoryRepo, redisClient)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
-
-	//category := router.Group("/categories")
-	//{
-	//	category.GET("/:id", categoryHandler.GetByID)
-	//	category.GET("/", categoryHandler.GetAll)
-	//	category.POST("/", categoryHandler.Create)
-	//	category.PUT("/:id", categoryHandler.Update)
-	//	category.DELETE("/:id", categoryHandler.Delete)
-	//}
 
 	authRepo := repo2.NewAuthRepository(db)
 	usersRedisClient := cache2.NewRedisClient(os.Getenv("REDIS_ADDR"), 1)

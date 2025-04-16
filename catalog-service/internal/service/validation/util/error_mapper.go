@@ -19,7 +19,8 @@ func GetHTTPStatusCode(err error) int {
 		errors.Is(err, ErrProductNameInvalid),
 		errors.Is(err, ErrProductNameNoLetter),
 		errors.Is(err, ErrProductDescriptionInvalid),
-		errors.Is(err, ErrProductPriceInvalid):
+		errors.Is(err, ErrProductPriceInvalid),
+		errors.Is(err, ErrInvalidField):
 		return http.StatusBadRequest
 
 	case
